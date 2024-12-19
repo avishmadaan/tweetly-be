@@ -14,17 +14,22 @@ datasource db {
 }
 
 model User {
-  id       String @id @default(auto()) @map("_id") @db.ObjectId
-  email    String @unique
-  password String
-  token    Token[]
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  email          String   @unique
+  password       String?
+  authProvider   String   @default("email_password")
+  name           String?
+  googleId       String?  
+  profilePicture String?
+  createdAt      DateTime? @default(now())
+  token          Token[]
 
   @@map("users")
 }
 
 model Token {
   id     String @id @default(auto()) @map("_id") @db.ObjectId
-  userId String  @db.ObjectId
+  userId String @db.ObjectId
   token  String @unique
   user   User   @relation(fields: [userId], references: [id])
 

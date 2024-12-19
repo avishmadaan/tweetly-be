@@ -1,9 +1,12 @@
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 import { z } from "zod";
 import bcrypt from "bcrypt"
 import { JWT_SECRET, prisma } from "../config";
 import jwt from "jsonwebtoken";
 import authMiddleware from "../middlewares/auth-middleware";
+import { sendWelcomeEmail } from "../emailer";
+import passport from "../configuration/passportConfig"; 
+
 
 const userRouter = Router();
 
@@ -40,6 +43,11 @@ userRouter.post("/signup", async (req, res) => {
                 password:hashedPassword
             }
         })
+
+          // Send a welcome email without blocking the response
+          sendWelcomeEmail(email).catch(err => {
+            console.error("Failed to send welcome email:", err);
+        });
 
         res.status(200).json({
             message:"Account Creation Success"
@@ -86,7 +94,7 @@ userRouter.post("/login", async (req, res)=> {
         }
     })
 
-    if(!user) {
+    if(!user) { 
 
         res.status(403).json({
             message:"User Does Not Exist"
@@ -147,8 +155,8 @@ userRouter.post("/login", async (req, res)=> {
 
     userRouter.post("/logout", async (req, res)=> {
 
-        const token = req.cookies.token;
-        console.log(token,"here is token")
+        const token = req.cookies.auth_token;
+ 
 
         if(!token) {
             res.status(404).json({ message: "Token Missing" });
@@ -162,6 +170,19 @@ userRouter.post("/login", async (req, res)=> {
                     token
                 }
             })
+
+            req.session.destroy((err) => {
+                if(err) {
+                    console.log("session destruction error", err);
+
+                    res.status(500).json({
+                        message:"Failed To Log Out"
+                    })
+                }
+            })
+
+            res.clearCookie("auth_token");
+            res.clearCookie("connect.sid")
 
             res.status(200).json({ message: "Logged out successfully" });
 
@@ -188,5 +209,80 @@ res.status(200).json({
 })
 
     })
+
+    userRouter.get("/google", 
+        
+        passport.authenticate("google", {
+            scope:["profile", "email"]
+            
+        })
+        
+    )
+
+
+    userRouter.get("/google/callback",
+        passport.authenticate('google', { failureRedirect: "/login" }),
+       async  (req: Request, res: Response) => {
+//This route runs whey are done with profile function ( basically last function)
+
+console.log("insde the last callback")
+
+try {
+
+
+            const user = req.user as { id: string };  
+    
+            if (!user) {
+                 res.status(400).json({ 
+                    message: "User not found" 
+                });
+                 return ;
+            }
+    
+            // Generate JWT token
+            const token = jwt.sign(
+                { id: user.id },
+                JWT_SECRET as string, 
+                { expiresIn: '1d' }
+            );
+
+            res.cookie("auth_token",token);
+            await prisma.token.create({
+                data:{
+                    userId:user.id,
+                    token:token
+                    
+                }
+            })
+
+
+            res.send(`
+                <script>
+                window.opener.postMessage({
+                success:true, message:"Login Successfull"
+                }, 'http://localhost:3000')
+                window.close();
+
+                </script>
+                `)
+
+        }
+
+    
+    catch(e) {
+
+        console.log(e);
+          // Return an error response
+          res.send(`
+            <script>
+                window.opener.postMessage({ success: false, message:"Internal Server Error" }, 'http://localhost:3000');
+                window.close();
+            </script>
+        `);
+
+
+    }
+  }  );
+
 
     export default userRouter
