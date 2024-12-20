@@ -49,3 +49,34 @@ If you did not sign up for this account, please disregard this email.
 
     }
 }
+
+
+
+export const sendOTPEmail = async (email: string, OTP: string) => {
+    try {
+      const info = await transporter.sendMail({
+        from: "", // Add your email address here
+        to: email,
+        subject: `Your OTP Code: ${OTP}`,
+        text: `
+  Dear User,
+  
+  Thank you for signing up with Tweetly. 
+  
+  Your OTP code for email verification is: ${OTP}
+  
+  Please enter this code on the verification page to complete your sign-up process.
+  
+  If you did not request this OTP, please ignore this email.
+  
+  Best regards,
+  The Tweetly Team
+        `,
+      });
+  
+      console.log("Email sent: " + info.response);
+    } catch (e) {
+      console.error("Error sending email", e);
+    }
+  };
+  

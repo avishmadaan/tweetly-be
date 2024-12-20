@@ -4,8 +4,9 @@ import bcrypt from "bcrypt"
 import { JWT_SECRET, prisma } from "../config";
 import jwt from "jsonwebtoken";
 import authMiddleware from "../middlewares/auth-middleware";
-import { sendWelcomeEmail } from "../emailer";
+import { sendOTPEmail, sendWelcomeEmail } from "../emailer";
 import passport from "../configuration/passportConfig"; 
+import { otpGenerator } from "../utils/otpgeneration";
 
 
 const userRouter = Router();
@@ -283,6 +284,210 @@ try {
 
     }
   }  );
+
+  userRouter.post("/otp/signup", async (req, res) => {
+
+    const requiredBody = z.object({
+        email:z.string().email(),
+        password:z.string().min(8, {message:"Minimum length is 8"}).max(20).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/, {
+            message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character."
+        })
+
+    })
+
+    const parsedData = requiredBody.safeParse(req.body);
+    
+    if(!parsedData.success) {
+        res.status(411).json({
+            message:"Error in inputs",
+            error: parsedData.error,
+        })
+        return;
+    }
+
+    const email = req.body.email;
+    const password =  req.body.password;
+
+    const hashedPassword = await bcrypt.hash(password,10);
+
+    try {
+
+        const user = await prisma.user.findUnique({
+            where:{
+                email:email
+            }
+        })
+
+        if(user){
+
+            res.status(409).json({
+                message:"User already exists with this email"
+               })   
+
+               return ;
+
+
+        }
+        const otp = otpGenerator(4);
+        console.log("Here is the OTP: " +otp);
+
+
+
+        const otpExpiresAt = new Date(Date.now() + 10*60*1000);
+        //10 mins time
+
+
+        await prisma.tempUser.upsert({
+            where:{
+                email:email
+            },
+            update:{},
+            create:{
+                email,
+                password:hashedPassword,
+                otp,
+                otpExpiresAt:otpExpiresAt
+
+            }
+        })
+        console.log("above otp email")
+
+       await sendOTPEmail(email, otp);
+
+       res.status(200).json({
+        message:"Proceed with OTP Verification",
+        email
+       })
+
+
+    }
+    catch(e){
+
+
+            res.status(500).json({
+                message:"Internal Server Error"
+               })
+
+        
+
+    }
+
+  })
+
+  userRouter.post("/signup/verification", async (req, res) => {
+
+    const email = req.body.email;
+    const otp = req.body.otp;
+
+    try {
+
+        const tempUser = await prisma.tempUser.findUnique({
+            where:{
+                email
+            }
+        })
+
+        if (!tempUser) {
+            res.status(404).json({
+                message:"No Such User Exist"
+            })
+            return;
+          }
+
+          if(new Date() > tempUser.otpExpiresAt) {
+            res.status(409).json({
+                message:"OTP has Expired"
+            })
+            return;
+
+          }
+
+          if(tempUser.otp !=otp) {
+            res.status(411).json({
+                message:"Invalid OTP"
+            })
+            return;
+
+          }
+
+          await prisma.user.create({
+            data:{
+                email,
+                password:tempUser.password
+            }
+        })
+
+                  // Send a welcome email without blocking the response
+                  sendWelcomeEmail(email).catch(err => {
+                    console.error("Failed to send welcome email:", err);
+                });
+
+            await prisma.tempUser.delete({
+                where:{
+                    email
+                }
+            });
+
+                res.status(200).json({
+                    message:"Account Creation Success"
+                })
+        
+
+    }
+
+    catch(err) {
+
+        res.status(500).json({
+            message:"Server error"
+           })
+
+
+    }
+
+  })
+
+  userRouter.post("/signup/verification/newotp", async (req, res) => {
+
+    try {
+
+    
+
+    const email = req.body.email;
+    const otp = otpGenerator(4);
+    console.log("Here is the Regerated OTP: " +otp);
+
+    const otpExpiresAt = new Date(Date.now() + 10*60*1000);
+
+    await prisma.tempUser.update({
+        where:{
+            email
+        },
+        data:{
+            email,
+            otp,
+            otpExpiresAt
+        }
+    })
+
+    await sendOTPEmail(email, otp);
+
+    res.status(200).json({
+        message:"OTP Resent Successfully"
+       })
+
+}
+catch(e) {
+    console.log(e);
+    res.status(500).json({
+        message:"Server error"
+       })
+
+
+}
+
+
+
+  })
 
 
     export default userRouter
