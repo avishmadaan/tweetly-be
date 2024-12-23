@@ -4,7 +4,7 @@ import bcrypt from "bcrypt"
 import { JWT_SECRET, prisma } from "../config";
 import jwt from "jsonwebtoken";
 import authMiddleware from "../middlewares/auth-middleware";
-import { sendOTPEmail, sendWelcomeEmail } from "../emailer";
+import { sendOTPEmail, sendPasswordResetConfirmationEmail, sendPasswordResetEmail, sendWelcomeEmail } from "../emailer";
 import passport from "../configuration/passportConfig"; 
 import { otpGenerator } from "../utils/otpgeneration";
 
@@ -288,6 +288,7 @@ try {
   userRouter.post("/otp/signup", async (req, res) => {
 
     const requiredBody = z.object({
+        name:z.string().min(3, {message:"Minimum length is 3"}),
         email:z.string().email(),
         password:z.string().min(8, {message:"Minimum length is 8"}).max(20).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$/, {
             message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character."
@@ -304,7 +305,7 @@ try {
         })
         return;
     }
-
+    const name = req.body.name;
     const email = req.body.email;
     const password =  req.body.password;
 
@@ -343,6 +344,7 @@ try {
             },
             update:{},
             create:{
+                name,
                 email,
                 password:hashedPassword,
                 otp,
@@ -412,6 +414,7 @@ try {
 
           await prisma.user.create({
             data:{
+                name:tempUser.name,
                 email,
                 password:tempUser.password
             }
@@ -450,12 +453,18 @@ try {
 
     try {
 
-    
-
     const email = req.body.email;
     const otp = otpGenerator(4);
     console.log("Here is the Regerated OTP: " +otp);
 
+    if(!email) {
+        res.status(404).json({
+            message:"Invalid Request, Email is missing"
+           })
+
+           return ;
+    
+    }
     const otpExpiresAt = new Date(Date.now() + 10*60*1000);
 
     await prisma.tempUser.update({
@@ -489,5 +498,171 @@ catch(e) {
 
   })
 
+  userRouter.post("/passwordreset", async (req, res)=> {
+  
+    const email = req.body.email || " ";
+    console.log("email :"+email);
+    
+        try {
+    
+            const user = await prisma.user.findUnique({
+                where:{
+                    email
+                }
+            })
+        
+            if(!user) { 
+        
+                res.status(404).json({
+                    message:"User Does Not Exist"
+                });
+        
+                return;
+            }
+
+            const token = jwt.sign(
+                { id: user.id },
+                JWT_SECRET as string, 
+                { expiresIn: '30m' }
+            );
+
+            await sendPasswordResetEmail(user.email, token);
+
+            
+       res.status(200).json({
+        message:"Password Reset Email Sent",
+        email
+       })
+
+
+    
+        }
+        catch(e) {
+    
+            console.log(e);
+            res.status(500).json({
+                message:"Internal Server error"
+               })
+    
+    
+        }
+    
+      });
+
+userRouter.post("/passwordreset/newpassword",  async (req, res)=> {
+  //@ts-ignore
+        const token = req.headers.authorization;
+        const password = req.body.password;
+
+        if (!token) {
+            res.status(401).json({ message: "Token missing" });
+            return;
+        }
+        
+            try {
+
+                const decoded = jwt.verify(token as string, JWT_SECRET  as string);
+
+                if(!decoded) {
+                    res.status(403).json({
+                        message:"Invalid Token"
+                    })
+                    return;
+
+
+                }
+       
+                const user = await prisma.user.findUnique({
+                    where:{
+                              //@ts-ignore
+                       id: decoded.id
+                    }
+                })
+            
+                if(!user) { 
+            
+                    res.status(404).json({
+                        message:"User Does Not Exist"
+                    });
+            
+                    return;
+                }
+
+                const hashedPassword = await bcrypt.hash(password,10);
+
+
+                await prisma.user.update({
+                    where:{
+                        id:user.id
+                    },
+                    data:{
+                        password:hashedPassword
+                    }
+                })
+        
+                await sendPasswordResetConfirmationEmail(user.email);
+    
+                
+           res.status(200).json({
+            message:"Password Reset Successfull"
+           })
+    
+    
+        
+            }
+            catch(e) {
+        
+                console.log(e);
+                res.status(500).json({
+                    message:"Internal Server error"
+                   })
+        
+        
+            }
+        
+          });
+
+  userRouter.get("/getuserdetail", authMiddleware, async (req, res)=> {
+//@ts-ignore
+    const userID = req.userId;
+    console.log(userID);
+
+    try {
+
+        const user = await prisma.user.findUnique({
+            where:{
+                id:userID
+            }
+        })
+    
+        if(!user) { 
+    
+            res.status(403).json({
+                message:"User Does Not Exist"
+            });
+    
+            return;
+        }
+
+        res.status(200).json({
+            message:"Successfully Fetched Data",
+            user
+        });
+
+    }
+    catch(e) {
+
+        console.log(e);
+        res.status(500).json({
+            message:"Internal Server error"
+           })
+
+
+    }
+
+  });
+
+
+    
 
     export default userRouter

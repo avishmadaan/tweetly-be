@@ -4,8 +4,9 @@ import { JWT_SECRET, prisma } from "../config";
 
 
 const authMiddleware = async (req:Request, res:Response, next:NextFunction) => {
- 
-    const token = req.headers.authorization;
+ console.log(req.cookies);
+    const token = req.cookies.auth_token;
+    console.log(token);
     if (!token) {
         res.status(401).json({ message: "Token missing" });
         return;

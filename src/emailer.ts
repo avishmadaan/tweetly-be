@@ -15,7 +15,7 @@ export const sendWelcomeEmail = async (email:string) => {
 
         const info = await transporter.sendMail({
 
-            from:"",
+            from:"avishrmadaan@gmail.com",
             to:email,
             subject:"Welcome to our world",
             text:`
@@ -55,7 +55,7 @@ If you did not sign up for this account, please disregard this email.
 export const sendOTPEmail = async (email: string, OTP: string) => {
     try {
       const info = await transporter.sendMail({
-        from: "", // Add your email address here
+        from: "Tweetly Support", 
         to: email,
         subject: `Your OTP Code: ${OTP}`,
         text: `
@@ -79,4 +79,62 @@ export const sendOTPEmail = async (email: string, OTP: string) => {
       console.error("Error sending email", e);
     }
   };
+  
+
+  export const sendPasswordResetEmail = async (email: string, token: string) => {
+    try {
+      const resetLink = `http://localhost:3000/login/passwordreset/newpassword?passresettoken=${token}&email=${encodeURIComponent(email)}`;
+  
+      const info = await transporter.sendMail({
+        from: "avishrmadaan@gmail.com", // Replace with your email address
+        to: email,
+        subject: "Password Reset Request - Tweetly",
+        html: `
+          <p>Dear User,</p>
+  
+          <p>We received a request to reset your password for your Tweetly account.</p>
+          <p>You can reset your password by clicking the link below:</p>
+  
+          <a href="${resetLink}" target="_blank" style="color: blue; text-decoration: underline;">Reset Password</a>
+          <br />
+          This link is valid for only 30mins.
+  
+          <p>If you did not request this, please ignore this email.</p>
+  
+          <p>Best regards,<br>The Tweetly Team</p>
+        `,
+      });
+  
+      console.log("Email sent: " + info.response);
+    } catch (e) {
+      console.error("Error sending email", e);
+    }
+  };
+
+  export const sendPasswordResetConfirmationEmail = async (email: string) => {
+    try {
+      const info = await transporter.sendMail({
+        from: '"Tweetly Support" <no-reply@tweetly.com>', // Replace with your email address
+        to: email,
+        subject: "Password Reset Successful - Tweetly",
+        html: `
+          <p>Dear User,</p>
+  
+          <p>Your password has been successfully reset.</p>
+  
+          <p>If you did not make this change, please contact our support team immediately.</p>
+  
+          <p>Best regards,<br>The Tweetly Team</p>
+        `,
+      });
+  
+      console.log("Confirmation email sent: " + info.response);
+    } catch (e) {
+      console.error("Error sending confirmation email", e);
+    }
+  };
+  
+
+
+
   
