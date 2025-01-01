@@ -14,29 +14,34 @@ datasource db {
 }
 
 model TempUser {
-id             String   @id @default(auto()) @map("_id") @db.ObjectId
-name            String?
- email          String   @unique
-  password       String
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String?
+  email        String   @unique
+  password     String
   otp          String
   otpExpiresAt DateTime
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   verified     Boolean  @default(false)
 
- @@map("temp_users")
+  @@map("temp_users")
 }
 
 model User {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  email          String   @unique
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  email          String    @unique
   password       String?
-  authProvider   String   @default("email_password")
+  authProvider   String    @default("email_password")
   name           String?
-  googleId       String?  
+  googleId       String?
   profilePicture String?
   createdAt      DateTime? @default(now())
-  token          Token[]
+
+  token    Token[]
+  twitter  Twitter[]
+  tweet    Tweet[]
+  post     Post[]
+  category Category[]
 
   @@map("users")
 }
@@ -48,4 +53,92 @@ model Token {
   user   User   @relation(fields: [userId], references: [id])
 
   @@map("tokens")
+}
+
+model Twitter {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  twitterId      String
+  username       String
+  name           String
+  profilePicture String?
+  authProvider   String
+  accessToken    String
+  refreshToken   String
+  userId         String  @db.ObjectId
+  user           User    @relation(fields: [userId], references: [id])
+
+  @@map("twitter")
+}
+
+model Tweet {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  tweetId     String
+  username    String
+  description String
+  createdAt   DateTime @default(now())
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id])
+
+  categoryId String?   @db.ObjectId
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete:SetNull)
+
+  @@map("tweet")
+}
+
+model Post {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  postContent  String
+  status       PostStatus @default(DRAFT)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  scheduledFor DateTime?
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  file File[]
+
+  @@map("post")
+}
+
+model File {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  fileName   String
+  fileType   FileType
+  fileSize   String
+  fileURL    String
+  uploadedAt DateTime @default(now())
+  postId     String   @db.ObjectId
+  post       Post     @relation(fields: [postId], references: [id])
+
+  @@map("file")
+}
+
+model Category {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  name      String
+  createdAt DateTime @default(now())
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+
+  tweets Tweet[]
+
+  @@unique([name, userId]) // this a composite unqiue constraint
+
+  @@map("category")
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
 }

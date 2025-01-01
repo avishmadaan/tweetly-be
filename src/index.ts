@@ -1,11 +1,13 @@
 import express from "express";
-import userRouter from "./routes/user";
+import userRouter from "./routes/auth";
 import cors from "cors"
 import { PORT } from "./config";
 import cookieParser from "cookie-parser"
 import session from "express-session";
 import { SESSION_SECRET } from "../src/config";
 import passport from "../src/configuration/passportConfig"; 
+import twitterRouter from "./routes/twitter";
+import contentRouter from "./routes/content";
 
 const app= express();
 
@@ -30,6 +32,8 @@ app.use(passport.session());
 
 
 app.use("/api/v1/user", userRouter);
+app.use("/api/v1/user/path",twitterRouter );
+app.use("/api/v1/user/content",contentRouter );
 
 
 

@@ -9,7 +9,7 @@ const authMiddleware = async (req:Request, res:Response, next:NextFunction) => {
     console.log(token);
     if (!token) {
         res.status(401).json({ message: "Token missing" });
-        return;
+        return; 
     }
 
     try {

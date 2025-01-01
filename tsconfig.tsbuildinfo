@@ -1,1 +1,1 @@
-{"root":["./src/config.ts","./src/index.ts","./src/middlewares/auth-middleware.ts","./src/routes/user.ts"],"version":"5.7.2"}
+{"root":["./src/config.ts","./src/emailer.ts","./src/index.ts","./src/configuration/passportconfig.ts","./src/middlewares/auth-middleware.ts","./src/routes/twitter.ts","./src/routes/user.ts","./src/utils/otpgeneration.ts"],"version":"5.7.2"}
