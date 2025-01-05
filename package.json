@@ -41,6 +41,7 @@
     "passport-twitter-oauth2": "^2.1.1",
     "prisma": "^6.0.1",
     "ts-node": "^10.9.2",
+    "uploadthing": "^7.4.4",
     "zod": "^3.24.1"
   },
   "devDependencies": {

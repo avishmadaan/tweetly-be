@@ -8,6 +8,7 @@ import { SESSION_SECRET } from "../src/config";
 import passport from "../src/configuration/passportConfig"; 
 import twitterRouter from "./routes/twitter";
 import contentRouter from "./routes/content";
+// import postRouter from "./routes/posts";
 
 const app= express();
 
@@ -34,6 +35,7 @@ app.use(passport.session());
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/user/path",twitterRouter );
 app.use("/api/v1/user/content",contentRouter );
+// app.use("/api/v1/user/posts",postRouter );
 
 
 

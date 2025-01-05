@@ -2,7 +2,6 @@ import { Router } from "express";
 import authMiddleware from "../middlewares/auth-middleware";
 import { prisma } from "../config";
 import axios from "axios";
-import e from "cors";
 
 const contentRouter = Router();
 
@@ -237,8 +236,10 @@ contentRouter.put("/categoryupdate",async (req, res) => {
   try {
     //@ts-ignore
     const userId = req.userId;
-    const categoryId = req.body.categoryId;
+    const categoryId = req.body.categoryId || null;
     const tweetIdPrimary = req.body.tweetIdPrimary;
+
+
 
     await prisma.tweet.update({
       where:{

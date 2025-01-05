@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const user_1 = __importDefault(require("./routes/user"));
+const auth_1 = __importDefault(require("./routes/auth"));
 const cors_1 = __importDefault(require("cors"));
 const config_1 = require("./config");
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
@@ -12,6 +12,8 @@ const express_session_1 = __importDefault(require("express-session"));
 const config_2 = require("../src/config");
 const passportConfig_1 = __importDefault(require("../src/configuration/passportConfig"));
 const twitter_1 = __importDefault(require("./routes/twitter"));
+const content_1 = __importDefault(require("./routes/content"));
+// import postRouter from "./routes/posts";
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
@@ -26,8 +28,10 @@ app.use((0, express_session_1.default)({
 }));
 app.use(passportConfig_1.default.initialize());
 app.use(passportConfig_1.default.session());
-app.use("/api/v1/user", user_1.default);
+app.use("/api/v1/user", auth_1.default);
 app.use("/api/v1/user/path", twitter_1.default);
+app.use("/api/v1/user/content", content_1.default);
+// app.use("/api/v1/user/posts",postRouter );
 app.listen(config_1.PORT, () => {
     console.log(`Server is running on port ${config_1.PORT}`);
 });

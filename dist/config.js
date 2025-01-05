@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BASE_URL = exports.GOOGLE_CLIENT_SECRET = exports.GOOGLE_CLIENT_ID = exports.SESSION_SECRET = exports.prisma = exports.PORT = exports.JWT_SECRET = void 0;
+exports.UPLOADTHING_APP_ID = exports.UPLOADTHING_SECRET = exports.BASE_URL = exports.GOOGLE_CLIENT_SECRET = exports.GOOGLE_CLIENT_ID = exports.SESSION_SECRET = exports.prisma = exports.PORT = exports.JWT_SECRET = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const client_1 = require("@prisma/client");
@@ -14,3 +14,5 @@ exports.SESSION_SECRET = process.env.SESSION_SECRET;
 exports.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 exports.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 exports.BASE_URL = process.env.BASE_URL;
+exports.UPLOADTHING_SECRET = process.env.UPLOADTHING_SECRET;
+exports.UPLOADTHING_APP_ID = process.env.UPLOADTHING_APP_ID;
