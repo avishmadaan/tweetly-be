@@ -91,7 +91,7 @@ model Post {
   id           String     @id @default(auto()) @map("_id") @db.ObjectId
   postContent  String
   status       PostStatus @default(DRAFT)
-  createdAt    DateTime   @default(now())
+  creatAedt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   scheduledFor DateTime?
 

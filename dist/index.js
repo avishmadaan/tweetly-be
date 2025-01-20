@@ -13,7 +13,7 @@ const config_2 = require("../src/config");
 const passportConfig_1 = __importDefault(require("../src/configuration/passportConfig"));
 const twitter_1 = __importDefault(require("./routes/twitter"));
 const content_1 = __importDefault(require("./routes/content"));
-// import postRouter from "./routes/posts";
+const posts_1 = __importDefault(require("./routes/posts"));
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
@@ -31,7 +31,7 @@ app.use(passportConfig_1.default.session());
 app.use("/api/v1/user", auth_1.default);
 app.use("/api/v1/user/path", twitter_1.default);
 app.use("/api/v1/user/content", content_1.default);
-// app.use("/api/v1/user/posts",postRouter );
+app.use("/api/v1/user/posts", posts_1.default);
 app.listen(config_1.PORT, () => {
     console.log(`Server is running on port ${config_1.PORT}`);
 });

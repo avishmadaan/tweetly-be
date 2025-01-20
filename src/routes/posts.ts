@@ -1,56 +1,131 @@
 // import { Router } from "express";
-// import authMiddleware from "../middlewares/auth-middleware";
-// import { prisma, UPLOADTHING_APP_ID, UPLOADTHING_SECRET } from "../config";
-// import axios from "axios";
-// import {createUploadthing} from "uploadthing/server"
+import authMiddleware from "../middlewares/auth-middleware";
+import { prisma, UPLOADTHING_APP_ID, UPLOADTHING_SECRET } from "../config";
+import axios from "axios";
+import {createUploadthing} from "uploadthing/server"
+import { Router } from "express";
+import { date } from "zod";
+import { createRouteHandler } from "uploadthing/express";
+import { uploadRouter } from "./uploadthing";
 
-// const postRouter = Router();
-
-// postRouter.use(authMiddleware);
-
-// const {createUploadThingAPI} = createUploadthing({
-//     appId:UPLOADTHING_APP_ID,
-//     secret:UPLOADTHING_SECRET
-// })
-
-// postRouter.post('/upload', async(req, res) => {
-//     try {
-
-//         const {files} = req.body;
-
-//         if(!files) {
-//             res.send(400).json({
-//                 message:"No Files Provided"
-//             })
-//             return ;
-//         }
-
-//         if(files.length >4) {
-//             res.send(400).json({
-//                 message:"You can upload a maximum of 4 files"
-//             })
-//             return ;
-
-//         }
-
-//         const uploadResponse = await createUploadThingAPI({
-//             files,
-//             endpoint:'mediaUploader'
-//         });
-//         console.log(uploadResponse)
-
-//         res.status(200).json({
-//             link:uploadResponse
-//         })
+const postRouter = Router();
 
 
-//     }
-//     catch(err) {
+postRouter.use(
+    "/uploadthing",
+    createRouteHandler({
+      router: uploadRouter,
+      config:{
+        token:process.env.UPLOADTHING_TOKEN
+      }
+ 
+    }),
+  );
 
-//     }
-// })
+postRouter.use(authMiddleware);
+
+postRouter.post("/createdraft", async ( req, res ) => {
+
+    try {
+        //@ts-ignore
+        const userId = req.userId;
+
+        const timeNow = new Date();
+
+        const result = await prisma.post.create({
+            data:{
+                postContent:"",
+                userId,
+                updatedAt:timeNow
+            }
+        })
+
+        res.status(201).json({
+            message:"Draft Post Create Successfully",
+            post:result
+        })
+
+    }
+
+    catch(err) {
+        console.log(err);
+    res.status(500).json({
+        message: "Internal Server Error",
+        error: err,
+      });
+    }
+
+})
+
+postRouter.put("/updatepost", async (req, res) => {
+
+
+})
+
+postRouter.get("/getalldrafts", async (req, res) => {
+
+    try {
+        //@ts-ignore
+        const userId = req.userId;
+
+        const draftPosts = await prisma.post.findMany({
+            where:{
+                userId,
+                status:"DRAFT"
+            }
+        })
+
+        res.status(200).json({
+            message: "Draft Post Fetched Successfully",
+            draftPosts
+          });
+        
+    }
+
+    catch(err) {
+        console.log(err);
+    res.status(500).json({
+        message: "Internal Server Error",
+        error: err,
+      });
+    }
+})
+
+postRouter.delete("/deletepost/:postid", async (req, res) => {
+
+    try {
+         //@ts-ignore
+         const userId = req.userId;
+         const postId = req.params.postid;
+
+         await prisma.post.delete({
+            where:{
+                id:postId,
+                userId
+            }
+         })
+
+         res.status(200).json({
+            message: "Post Deleted Successfully"
+          });
 
 
 
 
-// export default postRouter;
+    }
+    catch(err) {
+        console.log(err);
+        res.status(500).json({
+            message: "Internal Server Error",
+            error: err,
+          });
+    }
+
+})
+
+
+
+
+
+
+export default postRouter;

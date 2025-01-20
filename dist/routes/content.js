@@ -206,7 +206,7 @@ contentRouter.put("/categoryupdate", (req, res) => __awaiter(void 0, void 0, voi
     try {
         //@ts-ignore
         const userId = req.userId;
-        const categoryId = req.body.categoryId;
+        const categoryId = req.body.categoryId || null;
         const tweetIdPrimary = req.body.tweetIdPrimary;
         yield config_1.prisma.tweet.update({
             where: {
