@@ -29,16 +29,31 @@ postRouter.post("/createdraft", async ( req, res ) => {
     try {
         //@ts-ignore
         const userId = req.userId;
-
+        const postContent = req.body.postContent;
+        const mediaFiles:{id:string}[]= req.body.mediaFiles;
         const timeNow = new Date();
 
         const result = await prisma.post.create({
             data:{
-                postContent:"",
+                postContent:postContent,
                 userId,
                 updatedAt:timeNow
             }
         })
+
+        mediaFiles.forEach(async (file) => {
+            await prisma.file.update({
+                where:{
+                    id:file.id,
+                    userId
+                },
+                data:{
+                    userId,
+                    postId:result.id
+                }
+            })
+        })
+
 
         res.status(201).json({
             message:"Draft Post Create Successfully",
@@ -72,6 +87,12 @@ postRouter.get("/getalldrafts", async (req, res) => {
             where:{
                 userId,
                 status:"DRAFT"
+            },
+            include:{
+                file:true
+            },
+            orderBy:{
+                updatedAt:"desc"
             }
         })
 

@@ -9,6 +9,7 @@ import passport from "../src/configuration/passportConfig";
 import twitterRouter from "./routes/twitter";
 import contentRouter from "./routes/content";
 import postRouter from "./routes/posts";
+import mediaRouter from "./routes/media";
 
 const app= express();
 
@@ -36,6 +37,7 @@ app.use("/api/v1/user", userRouter);
 app.use("/api/v1/user/path",twitterRouter );
 app.use("/api/v1/user/content",contentRouter );
 app.use("/api/v1/user/posts",postRouter );
+app.use("/api/v1/user/media",mediaRouter );
 
 
 
