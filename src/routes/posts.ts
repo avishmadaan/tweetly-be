@@ -24,22 +24,44 @@ postRouter.use(
 
 postRouter.use(authMiddleware);
 
-postRouter.post("/createdraft", async ( req, res ) => {
+postRouter.post("/createOrUpdatedraft", async ( req, res ) => {
 
     try {
         //@ts-ignore
         const userId = req.userId;
         const postContent = req.body.postContent;
         const mediaFiles:{id:string}[]= req.body.mediaFiles;
+        let draftPostId = req.body.postId;
         const timeNow = new Date();
 
-        const result = await prisma.post.create({
-            data:{
-                postContent:postContent,
-                userId,
-                updatedAt:timeNow
-            }
-        })
+        if(draftPostId) {
+
+            await prisma.post.update({
+                where:{
+                    id:draftPostId
+                },
+                data:{
+                    postContent:postContent,
+                    userId,
+                    updatedAt:timeNow
+
+                }
+            })
+
+        }
+        else {
+
+            const result = await prisma.post.create({
+                data:{
+                    postContent:postContent,
+                    userId,
+                    updatedAt:timeNow
+                }
+            })
+
+            draftPostId = result.id;
+        }
+
 
         mediaFiles.forEach(async (file) => {
             await prisma.file.update({
@@ -49,15 +71,15 @@ postRouter.post("/createdraft", async ( req, res ) => {
                 },
                 data:{
                     userId,
-                    postId:result.id
+                    postId:draftPostId.id
                 }
             })
         })
 
 
         res.status(201).json({
-            message:"Draft Post Create Successfully",
-            post:result
+            message:"Saved As Draft",
+            postId:draftPostId
         })
 
     }
