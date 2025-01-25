@@ -33,10 +33,11 @@ postRouter.post("/createOrUpdatedraft", async ( req, res ) => {
         const mediaFiles:{id:string}[]= req.body.mediaFiles;
         let draftPostId = req.body.postId;
         const timeNow = new Date();
+        let alreadyLinkedFiles:{id:string}[] = [];
 
         if(draftPostId) {
 
-            await prisma.post.update({
+           const result=  await prisma.post.update({
                 where:{
                     id:draftPostId
                 },
@@ -45,8 +46,13 @@ postRouter.post("/createOrUpdatedraft", async ( req, res ) => {
                     userId,
                     updatedAt:timeNow
 
+                },
+                include:{
+                    file:true
                 }
             })
+
+            alreadyLinkedFiles = result.file;
 
         }
         else {
@@ -62,6 +68,19 @@ postRouter.post("/createOrUpdatedraft", async ( req, res ) => {
             draftPostId = result.id;
         }
 
+        alreadyLinkedFiles.forEach(async (file) => {
+
+            await prisma.file.update({
+                where:{
+                    id:file.id
+                },
+                data:{
+                    postId:null
+                }
+            })
+        })
+
+
 
         mediaFiles.forEach(async (file) => {
             await prisma.file.update({
@@ -71,7 +90,7 @@ postRouter.post("/createOrUpdatedraft", async ( req, res ) => {
                 },
                 data:{
                     userId,
-                    postId:draftPostId.id
+                    postId:draftPostId
                 }
             })
         })
@@ -165,6 +184,25 @@ postRouter.delete("/deletepost/:postid", async (req, res) => {
     }
 
 })
+
+postRouter.delete("/deletemediafrompost/:id", async (req,res) => {
+    try  {
+         //@ts-ignore
+         const userId = req.userId;
+
+    }
+
+    catch(err) {
+        console.log(err);
+        res.status(500).json({
+            message: "Internal Server Error",
+            error: err,
+          });
+
+    }
+})
+
+
 
 
 

@@ -12,9 +12,19 @@ exports.uploadRouter = {
              * @see https://docs.uploadthing.com/file-routes#route-config
              */
             maxFileSize: "4MB",
+            maxFileCount: 4,
+        },
+    }).onUploadComplete((data) => {
+        console.log("uoload there");
+        console.log("upload completed", data);
+    }),
+    //video file uploader
+    videoUploadr: f({
+        video: {
+            maxFileSize: "32MB",
             maxFileCount: 1,
         },
     }).onUploadComplete((data) => {
-        console.log("upload completed", data);
-    }),
+        console.log("Video upload completed", data);
+    })
 };

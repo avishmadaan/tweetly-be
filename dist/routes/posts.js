@@ -19,22 +19,73 @@ const express_1 = require("express");
 const express_2 = require("uploadthing/express");
 const uploadthing_1 = require("./uploadthing");
 const postRouter = (0, express_1.Router)();
+postRouter.use("/uploadthing", (0, express_2.createRouteHandler)({
+    router: uploadthing_1.uploadRouter,
+    config: {
+        token: process.env.UPLOADTHING_TOKEN
+    }
+}));
 postRouter.use(auth_middleware_1.default);
-postRouter.post("/createdraft", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+postRouter.post("/createOrUpdatedraft", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         //@ts-ignore
         const userId = req.userId;
+        const postContent = req.body.postContent;
+        const mediaFiles = req.body.mediaFiles;
+        let draftPostId = req.body.postId;
         const timeNow = new Date();
-        const result = yield config_1.prisma.post.create({
-            data: {
-                postContent: "",
-                userId,
-                updatedAt: timeNow
-            }
-        });
+        let alreadyLinkedFiles = [];
+        if (draftPostId) {
+            const result = yield config_1.prisma.post.update({
+                where: {
+                    id: draftPostId
+                },
+                data: {
+                    postContent: postContent,
+                    userId,
+                    updatedAt: timeNow
+                },
+                include: {
+                    file: true
+                }
+            });
+            alreadyLinkedFiles = result.file;
+        }
+        else {
+            const result = yield config_1.prisma.post.create({
+                data: {
+                    postContent: postContent,
+                    userId,
+                    updatedAt: timeNow
+                }
+            });
+            draftPostId = result.id;
+        }
+        alreadyLinkedFiles.forEach((file) => __awaiter(void 0, void 0, void 0, function* () {
+            yield config_1.prisma.file.update({
+                where: {
+                    id: file.id
+                },
+                data: {
+                    postId: null
+                }
+            });
+        }));
+        mediaFiles.forEach((file) => __awaiter(void 0, void 0, void 0, function* () {
+            yield config_1.prisma.file.update({
+                where: {
+                    id: file.id,
+                    userId
+                },
+                data: {
+                    userId,
+                    postId: draftPostId
+                }
+            });
+        }));
         res.status(201).json({
-            message: "Draft Post Create Successfully",
-            post: result
+            message: "Saved As Draft",
+            postId: draftPostId
         });
     }
     catch (err) {
@@ -55,6 +106,12 @@ postRouter.get("/getalldrafts", (req, res) => __awaiter(void 0, void 0, void 0, 
             where: {
                 userId,
                 status: "DRAFT"
+            },
+            include: {
+                file: true
+            },
+            orderBy: {
+                updatedAt: "desc"
             }
         });
         res.status(200).json({
@@ -93,38 +150,17 @@ postRouter.delete("/deletepost/:postid", (req, res) => __awaiter(void 0, void 0,
         });
     }
 }));
-postRouter.use("/uploadthing", (0, express_2.createRouteHandler)({
-    router: uploadthing_1.uploadRouter
+postRouter.delete("/deletemediafrompost/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        //@ts-ignore
+        const userId = req.userId;
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).json({
+            message: "Internal Server Error",
+            error: err,
+        });
+    }
 }));
-// const {createUploadThingAPI} = createUploadthing({
-//     appId:UPLOADTHING_APP_ID,
-//     secret:UPLOADTHING_SECRET
-// })
-// postRouter.post('/upload', async(req, res) => {
-//     try {
-//         const {files} = req.body;
-//         if(!files) {
-//             res.send(400).json({
-//                 message:"No Files Provided"
-//             })
-//             return ;
-//         }
-//         if(files.length >4) {
-//             res.send(400).json({
-//                 message:"You can upload a maximum of 4 files"
-//             })
-//             return ;
-//         }
-//         const uploadResponse = await createUploadThingAPI({
-//             files,
-//             endpoint:'mediaUploader'
-//         });
-//         console.log(uploadResponse)
-//         res.status(200).json({
-//             link:uploadResponse
-//         })
-//     }
-//     catch(err) {
-//     }
-// })
 exports.default = postRouter;
