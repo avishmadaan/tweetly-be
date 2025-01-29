@@ -1,12 +1,10 @@
 // import { Router } from "express";
 import authMiddleware from "../middlewares/auth-middleware";
-import { prisma, UPLOADTHING_APP_ID, UPLOADTHING_SECRET } from "../config";
-import axios from "axios";
-import {createUploadthing} from "uploadthing/server"
+import { prisma } from "../config";
 import { Router } from "express";
-import { date } from "zod";
 import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from "./uploadthing";
+import { compareAsc, format, intlFormat } from "date-fns";
 
 const postRouter = Router();
 
@@ -30,70 +28,77 @@ postRouter.post("/createOrUpdatedraft", async ( req, res ) => {
         //@ts-ignore
         const userId = req.userId;
         const postContent = req.body.postContent;
-        const mediaFiles:{id:string}[]= req.body.mediaFiles;
+        const mediaFiles:{id:string, postIds:string[]}[]= req.body.mediaFiles;
         let draftPostId = req.body.postId;
-        const timeNow = new Date();
-        let alreadyLinkedFiles:{id:string}[] = [];
+    
+        // const alreadyLinkedFiles:{id:string,postIds:string[]}[] = [];
 
-        if(draftPostId) {
+        const fileIdsArr:string[] =[ ];
+         mediaFiles.forEach((item) => {
+            fileIdsArr.push(item.id);
 
-           const result=  await prisma.post.update({
-                where:{
-                    id:draftPostId
-                },
-                data:{
-                    postContent:postContent,
-                    userId,
-                    updatedAt:timeNow
+        })
 
-                },
-                include:{
-                    file:true
+        const result = await prisma.post.upsert({
+            create:{
+                postContent:postContent,
+                userId,
+                updatedAt:new Date(),
+                fileIds:fileIdsArr
+
+            },
+            update:{
+                postContent:postContent,
+                userId,
+                updatedAt:new Date(),
+                fileIds:fileIdsArr
+
+            },
+            where:{
+                id:draftPostId || "6796405c4e0ced1111111111"
+            }
+        })
+
+        draftPostId = result.id;
+
+        //now time for postid's fields in each of file cleanup
+        const allMediaFilesHavingDraftPostId = await prisma.file.findMany({
+            where:{
+                postIds: {
+                    has:draftPostId
                 }
-            })
+            }
+        })
 
-            alreadyLinkedFiles = result.file;
-
-        }
-        else {
-
-            const result = await prisma.post.create({
-                data:{
-                    postContent:postContent,
-                    userId,
-                    updatedAt:timeNow
-                }
-            })
-
-            draftPostId = result.id;
-        }
-
-        alreadyLinkedFiles.forEach(async (file) => {
-
+        for(const file of allMediaFilesHavingDraftPostId) {
             await prisma.file.update({
                 where:{
                     id:file.id
                 },
                 data:{
-                    postId:null
+                    postIds: file.postIds.filter((id) => id != draftPostId)
                 }
+
             })
-        })
 
+        }
 
-
-        mediaFiles.forEach(async (file) => {
+        for(const file of mediaFiles) {
             await prisma.file.update({
                 where:{
-                    id:file.id,
-                    userId
+                    id:file.id
                 },
                 data:{
-                    userId,
-                    postId:draftPostId
+                    postIds: {
+                        push:draftPostId
+                    }
                 }
             })
-        })
+
+        }
+
+
+
 
 
         res.status(201).json({
@@ -124,18 +129,22 @@ postRouter.get("/getalldrafts", async (req, res) => {
         //@ts-ignore
         const userId = req.userId;
 
+
         const draftPosts = await prisma.post.findMany({
             where:{
                 userId,
                 status:"DRAFT"
             },
             include:{
-                file:true
+                files:true
             },
             orderBy:{
                 updatedAt:"desc"
             }
         })
+
+
+ 
 
         res.status(200).json({
             message: "Draft Post Fetched Successfully",
@@ -146,7 +155,7 @@ postRouter.get("/getalldrafts", async (req, res) => {
 
     catch(err) {
         console.log(err);
-    res.status(500).json({
+    res.status(500).json({ 
         message: "Internal Server Error",
         error: err,
       });

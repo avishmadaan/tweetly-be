@@ -99,7 +99,8 @@ model Post {
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
 
-  file File[]
+  fileIds String[] @db.ObjectId
+  files File[] @relation(fields: [fileIds], references: [id])
 
   @@map("post")
 }
@@ -113,8 +114,10 @@ model File {
   fileURL    String
   uploadedAt DateTime @default(now())
 
-  postId     String?   @db.ObjectId
-  post       Post?     @relation(fields: [postId], references: [id])
+  // postId     String?   @db.ObjectId
+  // post       Post?     @relation(fields: [postId], references: [id])
+  postIds String[] @db.ObjectId
+  posts Post[] @relation(fields: [postIds], references: [id])
 
   userId   String @db.ObjectId
   user User @relation(fields: [userId], references: [id])
