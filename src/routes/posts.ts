@@ -211,6 +211,40 @@ postRouter.delete("/deletemediafrompost/:id", async (req,res) => {
     }
 })
 
+postRouter.put("/movetodraft/:postid", async (req, res) => {
+    try {
+        //@ts-ignore
+        const userId = req.userId;
+        const postId = req.params.postid;
+
+        await prisma.post.update({
+            where:{
+                id:postId,
+                userId
+            },
+            data:{
+                status:"DRAFT"
+            }
+         })
+
+         res.status(200).json({
+            message: "Post Status Updated To Draft Successfully"
+          });
+
+
+    }
+
+    catch(err) {
+        console.log(err);
+        res.status(500).json({
+            message: "Internal Server Error",
+            error: err,
+          });
+    }
+
+
+    
+})
 
 
 
