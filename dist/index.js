@@ -15,6 +15,7 @@ const twitter_1 = __importDefault(require("./routes/twitter"));
 const content_1 = __importDefault(require("./routes/content"));
 const posts_1 = __importDefault(require("./routes/posts"));
 const media_1 = __importDefault(require("./routes/media"));
+const ai_1 = __importDefault(require("./routes/ai"));
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
@@ -34,6 +35,7 @@ app.use("/api/v1/user/path", twitter_1.default);
 app.use("/api/v1/user/content", content_1.default);
 app.use("/api/v1/user/posts", posts_1.default);
 app.use("/api/v1/user/media", media_1.default);
+app.use("/api/v1/user/ai", ai_1.default);
 app.listen(config_1.PORT, () => {
     console.log(`Server is running on port ${config_1.PORT}`);
 });

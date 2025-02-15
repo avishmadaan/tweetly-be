@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UPLOADTHING_APP_ID = exports.UPLOADTHING_SECRET = exports.BASE_URL = exports.GOOGLE_CLIENT_SECRET = exports.GOOGLE_CLIENT_ID = exports.SESSION_SECRET = exports.prisma = exports.PORT = exports.JWT_SECRET = void 0;
+exports.ASTRA_DB_COLLECTION = exports.ASTRA_DB_NAMESPACE = exports.ASTRA_DB_API_ENDPOINT = exports.ASTRA_DB_APPLICATION_TOKEN = exports.UPLOADTHING_APP_ID = exports.UPLOADTHING_SECRET = exports.BASE_URL = exports.GOOGLE_CLIENT_SECRET = exports.GOOGLE_CLIENT_ID = exports.SESSION_SECRET = exports.prisma = exports.PORT = exports.JWT_SECRET = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const client_1 = require("@prisma/client");
@@ -16,3 +16,7 @@ exports.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 exports.BASE_URL = process.env.BASE_URL;
 exports.UPLOADTHING_SECRET = process.env.UPLOADTHING_SECRET;
 exports.UPLOADTHING_APP_ID = process.env.UPLOADTHING_APP_ID;
+exports.ASTRA_DB_APPLICATION_TOKEN = process.env.ASTRA_DB_APPLICATION_TOKEN;
+exports.ASTRA_DB_API_ENDPOINT = process.env.ASTRA_DB_API_ENDPOINT;
+exports.ASTRA_DB_NAMESPACE = process.env.ASTRA_DB_NAMESPACE;
+exports.ASTRA_DB_COLLECTION = process.env.ASTRA_DB_COLLECTION;

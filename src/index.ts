@@ -10,6 +10,7 @@ import twitterRouter from "./routes/twitter";
 import contentRouter from "./routes/content";
 import postRouter from "./routes/posts";
 import mediaRouter from "./routes/media";
+import aiRouter from "./routes/ai";
 
 const app= express();
 
@@ -38,6 +39,7 @@ app.use("/api/v1/user/path",twitterRouter );
 app.use("/api/v1/user/content",contentRouter );
 app.use("/api/v1/user/posts",postRouter );
 app.use("/api/v1/user/media",mediaRouter );
+app.use("/api/v1/user/ai",aiRouter );
 
 
 

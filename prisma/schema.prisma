@@ -140,6 +140,17 @@ model Category {
   @@map("category")
 }
 
+model Bot {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+  tag String
+  imageURL String
+  twitterLink String
+  profile String?
+
+  @@map("bots")
+}
+
 enum FileType {
   IMAGE
   VIDEO

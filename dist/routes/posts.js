@@ -33,56 +33,59 @@ postRouter.post("/createOrUpdatedraft", (req, res) => __awaiter(void 0, void 0, 
         const postContent = req.body.postContent;
         const mediaFiles = req.body.mediaFiles;
         let draftPostId = req.body.postId;
-        const timeNow = new Date();
-        let alreadyLinkedFiles = [];
-        if (draftPostId) {
-            const result = yield config_1.prisma.post.update({
-                where: {
-                    id: draftPostId
-                },
-                data: {
-                    postContent: postContent,
-                    userId,
-                    updatedAt: timeNow
-                },
-                include: {
-                    file: true
+        // const alreadyLinkedFiles:{id:string,postIds:string[]}[] = [];
+        const fileIdsArr = [];
+        mediaFiles.forEach((item) => {
+            fileIdsArr.push(item.id);
+        });
+        const result = yield config_1.prisma.post.upsert({
+            create: {
+                postContent: postContent,
+                userId,
+                updatedAt: new Date(),
+                fileIds: fileIdsArr
+            },
+            update: {
+                postContent: postContent,
+                userId,
+                updatedAt: new Date(),
+                fileIds: fileIdsArr
+            },
+            where: {
+                id: draftPostId || "6796405c4e0ced1111111111"
+            }
+        });
+        draftPostId = result.id;
+        //now time for postid's fields in each of file cleanup
+        const allMediaFilesHavingDraftPostId = yield config_1.prisma.file.findMany({
+            where: {
+                postIds: {
+                    has: draftPostId
                 }
-            });
-            alreadyLinkedFiles = result.file;
-        }
-        else {
-            const result = yield config_1.prisma.post.create({
-                data: {
-                    postContent: postContent,
-                    userId,
-                    updatedAt: timeNow
-                }
-            });
-            draftPostId = result.id;
-        }
-        alreadyLinkedFiles.forEach((file) => __awaiter(void 0, void 0, void 0, function* () {
+            }
+        });
+        for (const file of allMediaFilesHavingDraftPostId) {
             yield config_1.prisma.file.update({
                 where: {
                     id: file.id
                 },
                 data: {
-                    postId: null
+                    postIds: file.postIds.filter((id) => id != draftPostId)
                 }
             });
-        }));
-        mediaFiles.forEach((file) => __awaiter(void 0, void 0, void 0, function* () {
+        }
+        for (const file of mediaFiles) {
             yield config_1.prisma.file.update({
                 where: {
-                    id: file.id,
-                    userId
+                    id: file.id
                 },
                 data: {
-                    userId,
-                    postId: draftPostId
+                    postIds: {
+                        push: draftPostId
+                    }
                 }
             });
-        }));
+        }
         res.status(201).json({
             message: "Saved As Draft",
             postId: draftPostId
@@ -108,7 +111,7 @@ postRouter.get("/getalldrafts", (req, res) => __awaiter(void 0, void 0, void 0, 
                 status: "DRAFT"
             },
             include: {
-                file: true
+                files: true
             },
             orderBy: {
                 updatedAt: "desc"
@@ -154,6 +157,32 @@ postRouter.delete("/deletemediafrompost/:id", (req, res) => __awaiter(void 0, vo
     try {
         //@ts-ignore
         const userId = req.userId;
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).json({
+            message: "Internal Server Error",
+            error: err,
+        });
+    }
+}));
+postRouter.put("/movetodraft/:postid", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        //@ts-ignore
+        const userId = req.userId;
+        const postId = req.params.postid;
+        yield config_1.prisma.post.update({
+            where: {
+                id: postId,
+                userId
+            },
+            data: {
+                status: "DRAFT"
+            }
+        });
+        res.status(200).json({
+            message: "Post Status Updated To Draft Successfully"
+        });
     }
     catch (err) {
         console.log(err);
