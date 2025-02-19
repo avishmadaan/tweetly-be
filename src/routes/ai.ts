@@ -9,29 +9,52 @@ aiRouter.use(authMiddleware);
 
 aiRouter.post("/getcontext", async(req, res) => {
     const embeddingVector:number[] = req.body.embeddingVector;
+    const botId:string = req.body.botId;
+    console.log("botId",botId);
 
-    const client = new DataAPIClient(ASTRA_DB_APPLICATION_TOKEN)
-    const db = client.db(ASTRA_DB_API_ENDPOINT as string, {namespace:ASTRA_DB_NAMESPACE})
+    const pipeline = [
+        {
+          $search: {
+            index: "Tweet_Search", // your Atlas Search index name
+            knnBeta: {
+              vector: embeddingVector,  // your query vector
+              path: "embedding",
+              k: 10,
+            },
+          },
+        },
+        {
+          $match: {
+            botId: botId,  // Filter results for the specific botId
+          },
+        },
+        {
+          $project: {
+            tweet_id: 1,
+            text: 1,
+            likes: 1,
+            retweets: 1,
+            comments: 1,
+            timestamp: 1,
+            score: { $meta: "searchScore" },
+          },
+        },
+      ];
+    
 
     try {
 
-        const collection = await db.collection(
-            ASTRA_DB_COLLECTION as string
-        );
-        const cursor = await collection.find({}, {
-            sort:{
-                $vector: embeddingVector
-            },
-            limit: 10
-        })
+        const result = await prisma.$runCommandRaw({
+            aggregate:"bottweets",
+            pipeline,
+            cursor:{}
+        }) as any
 
-        const documents = await cursor.toArray();
-        const docsMap = documents.map((doc) => doc.text);
-        const docContext = JSON.stringify(docsMap);
-
+        const tweets = result.cursor?.firstBatch ;
+     
         res.status(200).json({
             message:"Context Retrieved Successfully",
-            context:docContext
+            context:tweets
         })
 
     }catch(err){

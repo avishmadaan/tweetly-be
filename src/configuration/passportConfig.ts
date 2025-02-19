@@ -110,6 +110,10 @@ passport.use(
             twitterAccount = await prisma.twitter.update({
               where: { id: twitterAccount.id },
               data: {
+                twitterId,
+                username: username || "Unknown",
+                name: displayName || "Unknown",
+                profilePicture: photos && photos.length > 0 ? photos[0].value : null,
                 accessToken: token,
                 refreshToken: tokenSecret,
               },

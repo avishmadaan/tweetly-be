@@ -15,27 +15,60 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_middleware_1 = __importDefault(require("../middlewares/auth-middleware"));
 const config_1 = require("../config");
-const astra_db_ts_1 = require("@datastax/astra-db-ts");
 const aiRouter = (0, express_1.Router)();
 aiRouter.use(auth_middleware_1.default);
 aiRouter.post("/getcontext", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const embeddingVector = req.body.embeddingVector;
-    const client = new astra_db_ts_1.DataAPIClient(config_1.ASTRA_DB_APPLICATION_TOKEN);
-    const db = client.db(config_1.ASTRA_DB_API_ENDPOINT, { namespace: config_1.ASTRA_DB_NAMESPACE });
-    try {
-        const collection = yield db.collection(config_1.ASTRA_DB_COLLECTION);
-        const cursor = yield collection.find({}, {
-            sort: {
-                $vector: embeddingVector
+    const pipeline = [
+        {
+            $search: {
+                index: "Tweet_Search", // your Atlas Search index name
+                knnBeta: {
+                    vector: embeddingVector, // your query vector
+                    path: "embedding",
+                    k: 5,
+                },
             },
-            limit: 10
+        },
+        {
+            $project: {
+                tweet_id: 1,
+                text: 1,
+                likes: 1,
+                retweets: 1,
+                comments: 1,
+                timestamp: 1,
+                score: { $meta: "searchScore" },
+            },
+        },
+    ];
+    try {
+        const result = yield config_1.prisma.$runCommandRaw({
+            aggregate: "bottweets",
+            pipeline,
+            cursor: {}
         });
-        const documents = yield cursor.toArray();
-        const docsMap = documents.map((doc) => doc.text);
-        const docContext = JSON.stringify(docsMap);
+        const tweets = (_a = result.cursor) === null || _a === void 0 ? void 0 : _a.firstBatch;
         res.status(200).json({
             message: "Context Retrieved Successfully",
-            context: docContext
+            context: tweets
+        });
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).json({
+            message: "Internal Server Error",
+            error: err,
+        });
+    }
+}));
+aiRouter.get("/getbots", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const bots = yield config_1.prisma.bot.findMany();
+        res.status(200).json({
+            message: "Bots Found",
+            bots
         });
     }
     catch (err) {

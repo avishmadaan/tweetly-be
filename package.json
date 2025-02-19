@@ -7,7 +7,7 @@
     "start": "nodemon src/index.ts",
     "dev": "tsc -b && node ./dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "seed":"tsc -b && node ./dist/seed.js"
+    "seed": "tsc -b && node ./dist/seed.js"
   },
   "keywords": [],
   "author": "",
@@ -38,12 +38,14 @@
     "nodemo": "^1.0.0",
     "nodemon": "^3.1.9",
     "npm": "^11.0.0",
+    "openai": "^4.85.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-twitter": "^1.0.4",
     "passport-twitter-oauth2": "^2.1.1",
     "prisma": "^6.0.1",
     "ts-node": "^10.9.2",
+    "twitter-api-v2": "^1.20.1",
     "uploadthing": "^7.4.4",
     "zod": "^3.24.1"
   },

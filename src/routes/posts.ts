@@ -4,7 +4,8 @@ import { prisma } from "../config";
 import { Router } from "express";
 import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from "./uploadthing";
-import { compareAsc, format, intlFormat } from "date-fns";
+import axios from "axios";
+import { TwitterApi } from 'twitter-api-v2';
 
 const postRouter = Router();
 
@@ -244,6 +245,137 @@ postRouter.put("/movetodraft/:postid", async (req, res) => {
 
 
     
+})
+
+postRouter.get("/getpublishedpost", async (req, res) => {
+    try {
+        //@ts-ignore
+        const userId = req.userId;
+
+        const response = await prisma.post.findMany({
+            where:{
+                userId,
+                status:"PUBLISHED"
+            },
+            include:{
+                files:true
+            },
+            orderBy:{
+                updatedAt:"desc"
+            }
+        })
+
+        res.status(200).json({
+            message:"Published Post Fetched Successfully",
+            publishedPosts: response
+        })
+    } catch(err) {
+        console.log(err);
+        res.status(500).json({
+            message: "Internal Server Error",
+            error: err,
+          });
+    }
+})
+postRouter.get("/getscheduledpost", async (req, res) => {
+    try {
+        //@ts-ignore
+        const userId = req.userId;
+
+        const response = await prisma.post.findMany({
+            where:{
+                userId,
+                status:"SCHEDULED"
+            },
+            include:{
+                files:true
+            },
+            orderBy:{
+                updatedAt:"desc"
+            }
+        })
+
+        res.status(200).json({
+            message:"Scheduled Post Fetched Successfully",
+            scheduledPosts: response
+        })
+    } catch(err) {
+        console.log(err);
+        res.status(500).json({
+            message: "Internal Server Error",
+            error: err,
+          });
+    }
+})
+
+postRouter.post("/publishposttotwitter", async(req, res) => {
+
+        //@ts-ignore
+        const userId = req.userId;
+
+        const id = req.body.id;
+        const tweetText = req.body.tweetText;
+
+        const twitterAccount = await prisma.twitter.findUnique({
+            where: { 
+                id,
+                userId
+             },
+          });
+
+          if(!twitterAccount) {
+            
+            res.status(404).json({
+                message:"Twitter Account Not Connected"
+            })
+            return;
+          }
+
+          console.log("after if")
+          console.log(process.env.TWITTER_CLIENT_ID );
+          console.log(process.env.TWITTER_CLIENT_SECRET);
+
+          const client = new TwitterApi({
+            appKey: process.env.TWITTER_CLIENT_ID as string,
+            appSecret: process.env.TWITTER_CLIENT_SECRET as string,
+            accessToken:twitterAccount.accessToken,
+            accessSecret:twitterAccount.refreshToken
+          })
+
+        try {
+            console.log("reached here")
+            const response = await client.v2.tweet(tweetText);
+
+            const respo = await prisma.post.create({
+                data:{
+                    postContent:tweetText,
+                    status:"PUBLISHED",
+                    userId,
+                    tweetId:response.data.id 
+                }
+            })
+
+            res.status(201).json({
+                message:"Tweet Published Successfully",
+                tweetId:respo.tweetId
+            })
+            
+
+        }catch(err) {
+            console.log(err);
+            res.status(501).json({
+                message:"Tweet Posting Failed "
+            })
+
+        }
+
+
+
+
+
+
+   
+
 })
 
 

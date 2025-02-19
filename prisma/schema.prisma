@@ -95,6 +95,7 @@ model Post {
   creatAedt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   scheduledFor DateTime?
+  tweetId      String?
 
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
@@ -147,10 +148,25 @@ model Bot {
   imageURL String
   twitterLink String
   profile String?
+  botTweet BotTweet[]
 
   @@map("bots")
 }
 
+model BotTweet {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  tweetId String
+  text String
+  likes Int
+  retweets Int
+  replies Int
+  timestamp DateTime @default(now())
+  embedding Float[]
+  botId String @db.ObjectId
+  bot Bot @relation(fields: [botId], references: [id])
+
+  @@map("bottweets")
+}
 enum FileType {
   IMAGE
   VIDEO
