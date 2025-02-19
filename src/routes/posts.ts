@@ -312,9 +312,19 @@ postRouter.post("/publishposttotwitter", async(req, res) => {
 
         //@ts-ignore
         const userId = req.userId;
-
         const id = req.body.id;
         const tweetText = req.body.tweetText;
+        const postMedia:{
+            fileURL:string,
+            fileType:string
+        }[] = req.body.postMedia;
+
+        if (postMedia.length > 4) {
+             res.status(400).json({
+              message: "You can only upload up to 4 images per tweet.",
+            });
+            return;
+          }
 
         const twitterAccount = await prisma.twitter.findUnique({
             where: { 
@@ -331,10 +341,6 @@ postRouter.post("/publishposttotwitter", async(req, res) => {
             return;
           }
 
-          console.log("after if")
-          console.log(process.env.TWITTER_CLIENT_ID );
-          console.log(process.env.TWITTER_CLIENT_SECRET);
-
           const client = new TwitterApi({
             appKey: process.env.TWITTER_CLIENT_ID as string,
             appSecret: process.env.TWITTER_CLIENT_SECRET as string,
@@ -342,11 +348,47 @@ postRouter.post("/publishposttotwitter", async(req, res) => {
             accessSecret:twitterAccount.refreshToken
           })
 
+          const mediaIds:string[] = [];
+          console.log("media ids")
+          console.log(postMedia);
+
+          for(const file of postMedia) {
+
+            try {
+                const response = await axios.get(file.fileURL, {responseType:"arraybuffer"});
+                const buffer = Buffer.from(response.data, 'binary');
+                console.log("buffer")
+                console.log(buffer);
+                const mediaId = await client.v2.uploadMedia(buffer, {
+                    media_type:file.fileType,
+                    media_category:"tweet_image"
+                }) ;
+                console.log(mediaId)
+                mediaIds.push(mediaId);
+            } catch(err) {
+                console.log(err);
+                res.status(501).json({
+                    message:"Media Uploading Failed"
+                })
+                return;
+            }
+          }
+
+const limitedMediaIds = mediaIds.slice(0, 4) as [string] | [string, string] | [string, string, string] | [string, string, string, string];
+console.log("limitedMediaIds", limitedMediaIds);
+
         try {
             console.log("reached here")
-            const response = await client.v2.tweet(tweetText);
-
-            const respo = await prisma.post.create({
+            const response = await client.v2.tweet(tweetText, {
+                media:{
+                    media_ids:limitedMediaIds
+                }
+            });
+            //resolve create or update post
+            const respo = await prisma.post.upsert({
+                where:{
+                        id:postId
+                },
                 data:{
                     postContent:tweetText,
                     status:"PUBLISHED",
@@ -368,15 +410,15 @@ postRouter.post("/publishposttotwitter", async(req, res) => {
             })
 
         }
-
-
-
-
-
-
    
 
 })
+
+
+export const publishonTwitter = async () => {
+
+    
+}
 
 
 

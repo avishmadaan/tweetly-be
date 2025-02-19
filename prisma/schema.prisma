@@ -38,7 +38,7 @@ model User {
   createdAt      DateTime? @default(now())
 
   token    Token[]
-  twitter  Twitter[]
+  twitter  Twitter?
   tweet    Tweet[]
   post     Post[]
   category Category[]
@@ -66,7 +66,7 @@ model Twitter {
   authProvider   String
   accessToken    String
   refreshToken   String
-  userId         String  @db.ObjectId
+  userId         String  @db.ObjectId @unique
   user           User    @relation(fields: [userId], references: [id])
 
   @@map("twitter")
